@@ -1,1 +1,47 @@
-it work!
+<!doctype html>
+<html lang="it">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>mrbytehub</title>
+	<style>
+		html,body{height:100%;margin:0;background:#000;color:#0f0;font-family:monospace}
+		.center{display:flex;align-items:center;justify-content:center;height:100%}
+		.card{max-width:900px;padding:2rem;background:rgba(0,0,0,0.45);border:1px solid rgba(0,255,0,0.07)}
+		h1{margin:0 0 .5rem;font-size:2rem}
+		p{margin:.5rem 0;color:#9f9}
+		canvas{position:fixed;inset:0;z-index:0}
+		.content{position:relative;z-index:1}
+		a{color:#8f8}
+	</style>
+</head>
+<body>
+	<canvas id="m"></canvas>
+	<div class="center content">
+		<div class="card">
+			<h1>mrbytehub</h1>
+			<p>Benvenuto — progetti, link e contatti.</p>
+			<p><a href="/.well-known/atproto-did">atproto DID</a></p>
+		</div>
+	</div>
+	<script>
+		const c=document.getElementById('m'),ctx=c.getContext('2d');
+		function fit(){c.width=innerWidth;c.height=innerHeight}
+		fit();window.onresize=fit;
+		const cols = Math.floor(innerWidth/14);
+		let ypos = new Array(cols).fill(0);
+		function loop(){
+			ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(0,0,c.width,c.height);
+			ctx.fillStyle='#0f0';ctx.font='14px monospace';
+			for(let i=0;i<cols;i++){
+				const x = i*14;
+				const text = String.fromCharCode(0x30A0 + Math.random()*96);
+				ctx.fillText(text, x, ypos[i]*14);
+				if(ypos[i]*14 > c.height + Math.random()*1000) ypos[i]=0;
+				ypos[i]++;
+			}
+		}
+		setInterval(loop,50);
+	</script>
+</body>
+</html>
