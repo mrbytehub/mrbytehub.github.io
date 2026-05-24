@@ -6,22 +6,11 @@
 	<title>mrbytehub</title>
 	<style>
 		html,body{height:100%;margin:0;background:#000;color:#0f0;font-family:monospace}
-		.center{display:flex;align-items:center;justify-content:center;height:100%}
-		#welcome{position:absolute;top:-20%;font-size:5rem;letter-spacing:.5rem;color:#0f0;text-shadow:0 0 12px rgba(0,255,0,0.45);z-index:1;pointer-events:none}
-		#welcome.drop{animation:fall 2.6s linear forwards}
-		@keyframes fall{from{transform:translateY(-120%)}to{transform:translateY(120vh)}}
-		h1{margin:0 0 .5rem;font-size:2rem}
-		p{margin:.5rem 0;color:#9f9}
 		canvas{position:fixed;inset:0;z-index:0}
-		.content{position:relative;z-index:1}
-		a{color:#8f8}
 	</style>
 </head>
 <body>
 	<canvas id="m"></canvas>
-	<div class="center content">
-		<div id="welcome">welcome</div>
-	</div>
 	<script>
 		const c=document.getElementById('m'),ctx=c.getContext('2d');
 		function fit(){c.width=innerWidth;c.height=innerHeight}
@@ -33,32 +22,24 @@
 			ypos = new Array(cols).fill(0);
 		}
 		window.addEventListener('resize', fitCols);
+		const welcomeWord = 'welcome';
 		function loop(){
 			ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(0,0,c.width,c.height);
 			ctx.fillStyle='#0f0';ctx.font='14px monospace';
 			for(let i=0;i<cols;i++){
 				const x = i*14;
-				const text = Math.random() < 0.5 ? '0' : '1';
+				let text;
+				if(Math.random() < 0.15){
+					text = welcomeWord[Math.floor(Math.random()*welcomeWord.length)];
+				}else{
+					text = Math.random() < 0.5 ? '0' : '1';
+				}
 				ctx.fillText(text, x, ypos[i]*14);
 				if(ypos[i]*14 > c.height + Math.random()*300) ypos[i]=0;
 				ypos[i]++;
 			}
 		}
 		setInterval(loop,50);
-
-		// Welcome drop animation: periodically drop the word and randomize X
-		const welcome = document.getElementById('welcome');
-		function dropOnce(){
-			const x = Math.floor(Math.random()*(window.innerWidth - welcome.offsetWidth));
-			welcome.style.left = x + 'px';
-			welcome.classList.remove('drop');
-			// force reflow
-			void welcome.offsetWidth;
-			welcome.classList.add('drop');
-		}
-		setInterval(dropOnce, 2500);
-		// start first drop
-		dropOnce();
 	</script>
 </body>
 </html>
