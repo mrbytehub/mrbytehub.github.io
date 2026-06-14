@@ -1,2 +1,7 @@
-include:
-  - .well-known
+title: mrbytehub
+email: ""
+description: "Cyber Security & Threat Intel"
+baseurl: ""
+url: ""
+# Disabilita i temi predefiniti che forzano lo sfondo bianco
+theme: null
