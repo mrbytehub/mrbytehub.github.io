@@ -1,64 +1,61 @@
 ---
 layout: post
-title: "Analisi: Vulnerabilità multiple in Squid Caching Proxy"
+title: "Analisi: CVE-2026-47729 e CVE-2026-50012 in Squid Caching Proxy"
 date: 2026-06-12
 categories: security
-tags: [squid, vulnerability, dos, information-disclosure, rce, proxy]
+tags: [cve, squid, proxy, rce, dos, information-disclosure]
 ---
 
-# Rilevate molteplici vulnerabilità in Squid Caching Proxy
+# Rilevate Molteplici Vulnerabilità Critiche in Squid Caching Proxy
 
-**Impatto:** Grave compromissione della disponibilità del servizio, potenziale divulgazione di informazioni sensibili ed esecuzione di codice arbitrario (Impatto Sistemico Alto: 65.0).
+**Impatto:** Impatto sistemico Alto (65.0), con potenziale esecuzione di codice arbitrario, Denial of Service e divulgazione di informazioni sensibili.
 
-**Vettore:** Network (Rete / Richieste Proxy strutturate ad hoc)
+**Vettore:** Network (Rete)
 
 ### 1. Sintesi Tecnica
+L'Agenzia per la Cybersicurezza Nazionale (ACN) e lo CSIRT Italia hanno pubblicato un alert relativo a due nuove vulnerabilità di sicurezza che colpiscono Squid, il noto software open source utilizzato diffusamente come caching proxy. I difetti critici sono identificati come segue:
 
-In base ai recenti bollettini di sicurezza pubblicati dall'Agenzia per la Cybersicurezza Nazionale (ACN) e dal CSIRT Italia, sono state identificate due nuove vulnerabilità significative all'interno del software open source Squid, ampiamente utilizzato come caching proxy a livello aziendale.
+* **CVE-2026-47729** e **CVE-2026-50012**: Consentono impatti multipli e severi a seconda della configurazione del servizio.
 
-I vettori d'attacco legati a queste falle espongono i sistemi alle seguenti tipologie di minaccia:
-* **Information Disclosure:** Un utente malintenzionato potrebbe essere in grado di accedere a dettagli riservati e dati sensibili transitanti o memorizzati nel proxy.
-* **Denial of Service (DoS):** Sfruttando la vulnerabilità, un attaccante remoto può causare il crash o il blocco dei processi di Squid, compromettendo totalmente la disponibilità della connettività o del caching per i client interni.
-* **Arbitrary Code Execution:** Una delle componenti affette potrebbe consentire l'esecuzione di codice non autorizzato sulla macchina server ospitante, qualora si verifichino specifiche condizioni di configurazione.
+Le tipologie di attacco associate a tali vulnerabilità includono:
+* **Arbitrary Code Execution (RCE):** Un attaccante potrebbe eseguire codice non autorizzato con i privilegi del processo Squid.
+* **Denial of Service (DoS):** Sfruttamento di anomalie per causare il crash del servizio, interrompendo la navigazione della rete interna.
+* **Information Disclosure / Leakage:** Accesso non autorizzato ad informazioni sensibili e riservate transitanti o residenti sulle istanze affette.
 
-L'impatto complessivo è classificato come **Alto** a causa del ruolo centrale che i server proxy ricoprono nelle infrastrutture di rete enterprise come punti di ispezione e smistamento del traffico.
+L'effettivo sfruttamento delle vulnerabilità è strettamente subordinato alla specifica configurazione del modulo proxy indicata nei bollettini ufficiali di sicurezza del vendor.
 
 ### 2. Check di Perimetro (Come capire se sei colpito)
+Per determinare l'esposizione della propria infrastruttura aziendale, occorre verificare i seguenti elementi:
 
-Per determinare l'esposizione della propria infrastruttura a queste specifiche falle, è necessario effettuare le seguenti verifiche interne:
-
-* **Controllo della Versione:** Verificare la versione di Squid installata sui propri apparati operativi o server Linux. Risultano vulnerabili tutte le release storiche e correnti **precedenti alla versione 7.6**.
-* **Verifica della Configurazione:** Le vulnerabilità si manifestano esclusivamente nel caso in cui i prodotti elencati siano configurati secondo le specifiche modalità descritte all'interno del bollettino ufficiale del vendor (es. moduli di parsing o regole di ACL attive).
-* **Ispezione dei Log:** Monitorare i file di log di Squid (tipicamente posizionati in `/var/log/squid/access.log` e `/var/log/squid/cache.log`) per rilevare eventuali anomalie sistematiche, crash inaspettati del demone `squid` o richieste HTTP strutturate in modo anomalo.
+* **Versioni Vulnerabili:** Squid, in tutte le versioni precedenti alla release **7.6**.
+* **Verifica della Versione in uso:** Eseguire l'ispezione della versione binaria attualmente attiva sul server.
+* **Analisi dei Log:** Ispezionare `/var/log/squid/access.log` e `/var/log/squid/cache.log` alla ricerca di arresti anomali ripetuti del demone o richieste HTTP malformate insolite.
 
 ### 3. Strategia di Remediation
+Le azioni di mitigazione e remediation devono seguire un ordine cronologico prioritario:
 
-Si raccomanda l'applicazione immediata delle seguenti contromisure in ordine cronologico:
-
-1. **Aggiornamento Software:** Procedere tempestivamente all'aggiornamento di Squid portando il software all'ultima release stabile rilasciata dal vendor (**versione 7.6 o successive**), oppure applicare i pacchetti di sicurezza distribuiti dal proprio fornitore di sistema operativo (backporting delle patch).
-2. **Review delle Configurazioni:** Qualora l'aggiornamento non fosse immediatamente applicabile, consultare il bollettino tecnico del vendor per individuare le direttive di configurazione insicure e disabilitarle temporaneamente (es. restrizioni sulle funzionalità di caching avanzate o specifici helper di autenticazione).
-3. **Hardening di Rete:** Limitare l'accesso alle porte di ascolto del proxy (es. porta predefinita `3128`) consentendolo unicamente ai segmenti di rete interna o agli host autorizzati tramite regole di firewalling (iptables/nftables) o Network Security Groups.
+1. **Aggiornamento Software:** Si raccomanda di aggiornare tempestivamente Squid all'ultima release stabile disponibile (**versione 7.6 o successive**), distribuita ufficialmente dal vendor.
+2. **Restrizione degli Accessi:** Qualora l'aggiornamento non fosse immediatamente applicabile, limitare l'accesso alla porta del proxy (tipicamente `3128`) esclusivamente a subnet fidate mediante regole di firewalling (iptables/nftables) o ACL interne.
+3. **Validazione della Configurazione:** Verificare i parametri del file `squid.conf` per assicurarsi di disabilitare funzionalità sperimentali o non necessarie che potrebbero attivare le condizioni di vulnerabilità descritte nel bollettino.
 
 ### 4. Distribuzioni Enterprise Tracker
-
-* **Debian:** [Security Tracker CVE-Squid](https://security-tracker.debian.org/tracker/source-package/squid)
-* **Ubuntu:** [USN / CVE Tracker Squid](https://ubuntu.com/security/cves?q=squid)
-* **Red Hat:** [Red Hat CVE Portal](https://access.redhat.com/security/security-updates/#/cve)
+* **Debian:** [Security Tracker CVE-2026-47729](https://security-tracker.debian.org/tracker/CVE-2026-47729) | [Security Tracker CVE-2026-50012](https://security-tracker.debian.org/tracker/CVE-2026-50012)
+* **Ubuntu:** [USN / CVE Tracker CVE-2026-47729](https://ubuntu.com/security/CVE-2026-47729) | [USN / CVE Tracker CVE-2026-50012](https://ubuntu.com/security/CVE-2026-50012)
+* **Red Hat:** [Red Hat CVE Portal CVE-2026-47729](https://access.redhat.com/security/cve/CVE-2026-47729) | [Red Hat CVE Portal CVE-2026-50012](https://access.redhat.com/security/cve/CVE-2026-50012)
 
 ### 5. Fonti e Referenze (Sitografia)
-
 * **Fonte Primaria:** [[ACN] Rilevate vulnerabilità in Squid](https://www.acn.gov.it/portale/web/guest/-/rilevate-vulnerabilita-in-squid)
-* **Analisi Correlata:** [[CSIRT Toscana] Rilevate vulnerabilità in Squid (AL04/260612/CSIRT-ITA)](https://csirt.regione.toscana.it/rilevate-vulnerabilita-in-squid-al04-260612-csirt-ita/)
+* **Analisi Correlata:** [[OSS-Security] Open Source Security Mailing List Reference](https://seclists.org/oss-sec/2026/q2/896)
 
 ### 6. Indicatori di Compromissione (IoC)
-
 | Tipo | Valore | Note |
 | :--- | :--- | :--- |
-| Versione Software | Squid < 7.6 | Versioni del software affette da falle multiple |
+| Vulnerabilità | CVE-2026-47729 | Identificatore difetto Squid (RCE/DoS/Info Disclosure) |
+| Vulnerabilità | CVE-2026-50012 | Identificatore difetto Squid (RCE/DoS/Info Disclosure) |
 
 **Comando rapido di verifica / Query di Hunting:**
-
-Per verificare rapidamente la versione di Squid attualmente in esecuzione sul sistema locale Linux, utilizzare il seguente comando da terminale:
+Per verificare lo stato del servizio o ispezionare i log alla ricerca di anomalie strutturate, eseguire il seguente comando da terminale:
 
 ```bash
-squid -v | grep -i "version"
+squid -v 2>&1 | grep -i "version"
+```
