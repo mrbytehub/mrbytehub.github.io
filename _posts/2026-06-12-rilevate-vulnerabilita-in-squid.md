@@ -3,125 +3,51 @@ layout: post
 title: "Analisi: Vulnerabilità multiple in Squid Proxy (CVE-2026-47729, CVE-2026-50012)"
 date: 2026-06-12
 categories: security
-tags: [squid, proxy, cache, cve-2026-47729, cve-2026-50012, acn, open-source]
+tags: [linux, cve, squid, proxy, network]
 ---
 
-# Vulnerabilità Multiple di Sicurezza Critiche in Squid Caching Proxy
+# Vulnerabilità multiple in Squid Caching Proxy (CVE-2026-47729, CVE-2026-50012)
 
-**Impatto:** Alto - Rischio concreto di Denial of Service (DoS), Information Disclosure e potenziale esecuzione di codice arbitrario (Arbitrary Code Execution).
+**Impatto:** Alto - Rischio di esecuzione di codice arbitrario, Denial of Service (DoS) e divulgazione di informazioni sensibili.
 **Vettore:** Network
 
 ### 1. Sintesi Tecnica
-L'Agenzia per la Cybersicurezza Nazionale (ACN) ha rilasciato un bollettino di allerta relativo a due nuove vulnerabilità individuate in Squid, il celebre software open-source impiegato come proxy di caching e web gateway. Le falle di sicurezza interessano tutte le versioni precedenti alla release 7.6. Di seguito viene presentata l'analisi dettagliata della root cause e dei meccanismi di sfruttamento:
+Sono state identificate due vulnerabilità che colpiscono Squid, il noto software open source ampiamente utilizzato come caching proxy server. L'analisi tecnica evidenzia i seguenti vettori di minaccia legati alla gestione interna dei protocolli e dei moduli di memoria:
+* **CVE-2026-50012 (Heap-based Buffer Overflow):** Dinamica causata da un difetto di validazione impropria dell'input (Improper Input Validation) all'interno del modulo *Cache Digest Handler*. Un server remoto considerato attendibile o un utente malintenzionato in grado di camuffarsi da tale può sfruttare questa falla inviando risposte malevole appositamente configurate ai messaggi di richiesta `cache_digest`. Questo innesca un overflow nella memoria heap, con conseguente arresto anomalo del servizio (Denial of Service) o potenziale esecuzione di codice arbitrario (Arbitrary Code Execution).
+* **CVE-2026-47729 (Out-of-bounds Read):** Vulnerabilità di lettura fuori dai limiti individuata all'interno del modulo *FTP Gateway Handler*. Un utente malintenzionato remoto può inviare input non validi o malformati durante le transazioni di gateway FTP gestite dal proxy. Questo comportamento induce Squid a leggere aree di memoria al di fuori dei buffer allocati, provocando la divulgazione di informazioni riservate (Information Disclosure) memorizzate nella RAM del sistema o il crash del processo.
 
-* **CVE-2026-47729 (Out-of-bounds Read nel modulo FTP Gateway):** Questa vulnerabilità è riconducibile a un bug di tipo 'Improper Validation of Syntactic Correctness of Input'. Quando Squid opera come gateway per il protocollo FTP, la mancata corretta validazione sintattica della risposta proveniente da un server FTP remoto non conforme (o sotto il controllo di un attaccante) innesca una lettura fuori dai limiti della memoria (Out-of-Bounds Read). Questo consente a un client autorizzato di intercettare frammenti casuali di memoria contenenti transazioni non correlate gestite dal proxy in quel momento.
-* **CVE-2026-50012 (Heap-based Buffer Overflow nei Cache Digests):** La falla risiede in un difetto di validazione dell'input ('Improper Input Validation') durante la gestione delle risposte ai messaggi di richiesta 'cache_digest'. Un server remoto malevolo può inviare risposte appositamente modificate per mandare in overflow la memoria heap del processo di Squid. Le conseguenze variano dal crash immediato del servizio (Denial of Service) al potenziale sfruttamento per l'esecuzione di codice non autorizzato. Questa vulnerabilità è circoscritta esclusivamente alle istanze di Squid compilate con l'opzione esplicita `--enable-cache-digests`.
+### 2. Check di Perimetro ed Esposizione
+Un sistema che esegue Squid deve considerarsi esposto o vulnerabile qualora soddisfi i seguenti criteri:
+* **Versioni software affette:** Presenza di installazioni di Squid antecedenti alla versione **7.6** (inclusi i rami stabili precedenti 4.x, 5.x e 6.x).
+* **Opzioni di compilazione specifiche (per CVE-2026-50012):** L'istanza deve essere stata esplicitamente configurata e compilata con l'opzione `--enable-cache-digests`. Se questa opzione non è attiva nell'eseguibile in uso, l'attacco basato sulla heap non può andare a buon fine.
+* **Esposizione dei servizi:** Porte del proxy Squid raggiungibili da reti non fidate o configurazione di regole di peering (`cache_peer`) che consentono lo scambio di cache digest con server remoti esterni arbitrari.
 
-### 2. Check di Perimetro (Come capire se sei colpito)
-Per identificare la presenza della vulnerabilità all'interno del proprio perimetro infrastrutturale, gli amministratori di sistema devono verificare la versione in uso e i flag di configurazione attivi:
+### 3. Strategia di Remediation e Hardening
+La risoluzione e la mitigazione del rischio richiedono l'adozione delle seguenti misure protettive sui sistemi:
+* **Aggiornamento immediato:** Eseguire l'upgrade di Squid alla versione **7.6** o successive, oppure applicare tempestivamente le patch di sicurezza rilasciate dai manutentori della specifica distribuzione Linux in uso (Debian, Ubuntu, Red Hat, Amazon Linux).
+* **Workaround e Hardening di Configurazione:**
+  * Qualora l'aggiornamento non sia immediatamente applicabile, disabilitare lo scambio dei cache digest. Modificare il file `squid.conf` rimuovendo o commentando i nodi di peering non strettamente necessari, oppure ricompilare Squid escludendo l'opzione `--enable-cache-digests`.
+  * Limitare o disattivare il modulo gateway FTP configurando in modo restrittivo le ACL di rete per bloccare richieste FTP non autorizzate dirette al proxy.
+  * Implementare regole di firewalling per limitare l'accesso alle porte di ascolto di Squid soltanto a indirizzi IP strettamente autorizzati e fidati.
 
-* **Verifica della Versione Lineare:** Qualsiasi istanza operativa di Squid con versione inferiore alla 7.6 (es. rami 4.x, 5.x, 6.x e versioni 7.x fino alla 7.5) è da considerarsi esposta alle minacce descritte.
-* **Ispezione dei Flag di Compilazione:** Eseguire il comando `squid -v` sulla macchina host per verificare la stringa di compilazione. Se nell'output è presente l'argomento `--enable-cache-digests`, il sistema risulta esposto alla vulnerabilità critica CVE-2026-50012.
-* **Analisi dell'Infrastruttura di Rete:** Mappare l'utilizzo del proxy per le connessioni in uscita che utilizzano lo schema `ftp://` per determinare se la funzionalità di FTP gateway sia attivamente sollecitata da utenti o applicazioni interne.
+### 4. Riferimenti Ufficiali e Bollettini Vendor
+* **Riferimento Ufficiale:** [MITRE CVE-2026-47729](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-47729)
+* **Riferimento Ufficiale:** [MITRE CVE-2026-50012](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-50012)
+* **Debian Security Tracker:** [Squid Source Package Vulnerabilities](https://security-tracker.debian.org/tracker/CVE-2026-47729)
+* **Amazon Linux Security Center:** [Advisory CVE-2026-50012](https://explore.alas.aws.amazon.com/CVE-2026-50012.html)
 
-### 3. Strategia di Remediation
-La mitigazione completa ed efficace richiede l'applicazione tempestiva delle patch ufficiali del fornitore o l'adozione di misure compensative temporanee:
-
-* **Aggiornamento del Software (Risoluzione Definitiva):** Aggiornare immediatamente i pacchetti o i binari di Squid alla versione **7.6** o successive, introdotte per risolvere strutturalmente entrambe le vulnerabilità.
-* **Rimozione del Supporto Cache Digests (Workaround CVE-2026-50012):** Qualora l'aggiornamento immediato non fosse praticabile, è indispensabile ricompilare il software escludendo l'opzione `--enable-cache-digests` o disattivare l'uso dei digest nel file di configurazione `squid.conf`, limitando lo scambio di tabelle di cache con peer remoti non fidati.
-* **Restrizione degli Accessi FTP Gateway (Mitigazione CVE-2026-47729):** Isolare le funzionalità FTP disabilitando o limitando l'uso delle direttive di inoltro verso server FTP esterni non censiti o insicuri tramite apposite regole di Controllo Accessi (ACL) nel file `squid.conf`.
-
-### 4. Distribuzioni Enterprise Tracker
-* **Debian:** [Security Tracker CVE-2026-47729](https://security-tracker.debian.org/tracker/CVE-2026-47729)
-* **Ubuntu:** [USN / CVE Tracker CVE-2026-47729](https://ubuntu.com/security/cve/CVE-2026-47729)
-* **Red Hat:** [Red Hat CVE Portal CVE-2026-47729](https://access.redhat.com/security/cve/CVE-2026-47729)
-
-### 5. Fonti e Referenze (Sitografia)
-* **Fonte Primaria:** [ACN - Rilevate vulnerabilità in Squid](https://www.acn.gov.it/portale/w/rilevate-vulnerabilita-in-squid)
-* **Approfondimento:** [Openwall oss-security - Squid CVE-2026-47729 and CVE-2026-50012](https://seclists.org/oss-sec/2026/q2/896)
+### 5. Fonti e Referenze
+* **Fonte Primaria:** [ACN Agenzia per la Cybersicurezza Nazionale - Rilevate vulnerabilità in Squid](https://www.acn.gov.it/portale/w/rilevate-vulnerabilita-in-squid)
+* **Approfondimento:** [OSS-Security Mailing List - Squid Security Releases](https://seclists.org/oss-sec/2026/q2/896)
 
 ### 6. Indicatori di Compromissione (IoC)
 Nessun indicatore di compromissione (IoC) rilevato nelle fonti analizzate.
 
-**Strumenti di Verifica Tecnica e Hunting:**
-Al fine di automatizzare le attività di audit e di identificazione della vulnerabilità sugli host aziendali, viene fornito uno script Bash ad ampio spettro. Il codice esamina in modo sicuro le caratteristiche dell'eseguibile locale, estrae la versione e segnala la presenza dei flag di compilazione pericolosi.
-
-```bash
-#!/bin/bash
-# ==============================================================================
-# Squid Proxy Vulnerability Auditor (CVE-2026-47729 & CVE-2026-50012)
-# Descrizione: Analizza l'istanza locale di Squid per rilevare versioni 
-#              vulnerabili e configurazioni a rischio compilazione.
-# ==============================================================================
-
-set -euo pipefail
-
-# Definizione dei codici colore per l'output a terminale
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m'
-
-echo "======================================================================"
-echo " [!] Squid Proxy Security Auditor & Hardening Tool"
-echo "======================================================================"
-
-# Individuazione del binario di Squid installato nel sistema
-SQUID_BIN=$(command -v squid || command -v squid3 || true)
-
-if [ -z "$SQUID_BIN" ]; then
-    echo -e "${GREEN}[+] Squid non è installato o non è presente nel PATH di questo sistema.${NC}"
-    exit 0
-fi
-
-echo -e "[*] Individuato binario Squid in: ${SQUID_BIN}"
-
-# Estrazione della stringa di versione principale
-SQUID_VERSION_RAW=$($SQUID_BIN -v | head -n 1 | awk '{print $4}')
-echo -e "[*] Versione software rilevata: ${SQUID_VERSION_RAW}"
-
-# Parsing della versione (Major e Minor) per la verifica della soglia di sicurezza
-VERSION_MAJOR=$(echo "$SQUID_VERSION_RAW" | cut -d'.' -f1)
-VERSION_MINOR=$(echo "$SQUID_VERSION_RAW" | cut -d'.' -f2)
-
-IS_VULNERABLE=0
-
-if [ "$VERSION_MAJOR" -lt 7 ]; then
-    IS_VULNERABLE=1
-elif [ "$VERSION_MAJOR" -eq 7 ] && [ "$VERSION_MINOR" -lt 6 ]; then
-    =1
-fi
-
-if [ "$IS_VULNERABLE" -eq 1 ]; then
-    echo -e "${RED}[!] ALLERTA: La versione attuale è precedente alla 7.6 ed è suscettibile ad attacchi.${NC}"
-else
-    echo -e "${GREEN}[+] Successo: La versione installata risulta protetta (>= 7.6).${NC}"
-fi
-
-# Verifica del flag specifico per la vulnerabilità CVE-2026-50012
-echo -e "\n[*] Ispezione dei parametri di compilazione del binario..."
-COMPILATION_FLAGS=$($SQUID_BIN -v)
-
-if echo "$COMPILATION_FLAGS" | grep -q -- "--enable-cache-digests"; then
-    echo -e "${RED}[!] RISCHIO: Il binario include '--enable-cache-digests'. Il vettore CVE-2026-50012 è ATTIVO.${NC}"
-else
-    echo -e "${GREEN}[+] Ottimo: Il binario non supporta '--enable-cache-digests'. Mitigazione integrata.${NC}"
-fi
-
-# Controllo preliminare dello stato di stabilità nei log
-CACHE_LOG="/var/log/squid/cache.log"
-echo -e "\n[*] Analisi euristica del registro degli errori di sistema..."
-if [ -f "$CACHE_LOG" ]; then
-    if grep -Ei "assertion failed|signal 11|segmentation fault" "$CACHE_LOG" | tail -n 5; then
-        echo -e "${YELLOW}[!] Rilevati potenziali eventi insoliti o crash recenti nel log degli errori.${NC}"
-    else
-        echo -e "${GREEN}[+] Nessuna anomalia strutturale macroscopica rilevata nel log degli errori.${NC}"
-    fi
-else
-    echo -e "[*] File log standard cache.log non presente nel percorso predefinito. Analisi log saltata."
-fi
-
-echo "======================================================================"
-echo -e "[*] Audit completato. Aggiornare i sistemi vulnerabili alla release 7.6"
-echo "======================================================================"
-```
+### 7. Rilevamento e Tracce nei Sistemi
+Per intercettare tentativi di abuso o comportamenti anomali generati dalle vulnerabilità descritte, controllare gli elementi nativi del sistema:
+* **Verifica dei Log di Errore (`cache.log`):**
+  * Ispezionare il log di diagnostica di Squid (generalmente posizionato in `/var/log/squid/cache.log`) alla ricerca di arresti improvvisi registrati come `Segmentation fault`, `SIGSEGV` o errori associati a violazioni della memoria heap durante l'elaborazione dei digest provenienti dai `cache_peer`.
+* **Monitoraggio dei Log di Accesso (`access.log`):**
+  * Analizzare le richieste HTTP e FTP nel file `/var/log/squid/access.log`. Identificare stringhe di comando insolitamente lunghe, payloads strutturati con caratteri di escape non standard o sequenze ripetitive mirate a saturare i buffer dei moduli FTP.
+* **Ispezione dei Binari e dei Processi:**
+  * Controllare le opzioni con cui è stato compilato l'eseguibile attivo lanciando il comando `squid -v`. Controllare se l'output contiene la stringa `--enable-cache-digests` per determinare l'effettiva presenza del modulo affetto da overflow.
