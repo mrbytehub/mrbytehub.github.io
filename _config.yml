@@ -1,3 +1,9 @@
 include:
   - .well-known
   - index.md
+# Altre configurazioni del tuo sito (title, url, ecc.)
+url: "https://mrbytehub.github.io" # Sostituisci con il tuo URL reale
+baseurl: "" # Lascia vuoto o inserisci il nome della repository se non è una user page
+
+plugins:
+  - jekyll-feed

@@ -32,6 +32,9 @@ title: "mrbytehub | Threat Intel Dashboard"
 
 <div class="container">
     <h1>🛡️ Threat Intelligence Dashboard</h1>
+    <a href="{{ '/feed.xml' | relative_url }}" target="_blank" style="font-size: 0.9em; color: #ff6600; text-decoration: none;">
+       🌐 Abbonati al Feed RSS
+    </a>
     <p>Analisi rapide e strutturate su vulnerabilità critiche (CVE) e campagne di minaccia attive.</p>
 
     <table>
