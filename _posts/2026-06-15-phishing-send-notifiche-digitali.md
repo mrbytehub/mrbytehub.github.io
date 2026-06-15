@@ -3,7 +3,7 @@ layout: post
 title: "Analisi: Campagna di Phishing SEND - Servizio Notifiche Digitali"
 date: 2026-06-15
 categories: security
-tags: [phishing,smishing,send,pagopa]
+tags: [phishing,smishing]
 ---
 
 # Campagna di Phishing a Tema "SEND - Servizio Notifiche Digitali"

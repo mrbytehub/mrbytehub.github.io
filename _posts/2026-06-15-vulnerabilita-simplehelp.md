@@ -3,7 +3,7 @@ layout: post
 title: "Analisi: CVE-2026-48558"
 date: 2026-06-15
 categories: security
-tags: [windows,linux,cve,simplehelp,rce]
+tags: [windows,linux,cve,rce]
 ---
 
 # Vulnerabilità di Authentication Bypass Critica in SimpleHelp (CVE-2026-48558)
