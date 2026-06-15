@@ -1,3 +1,5 @@
 # mrbytehub.github.io - Threat Intelligence IoC Feed
 # Aggiornato costantemente. Formato: Defanged / Plain Text
 # --------------------------------------------------------
+107.149.130[.]5
+notificheadigitali[.]org
