@@ -3,7 +3,7 @@ layout: post
 title: "Analisi: CVE-2026-48907"
 date: 2026-06-15
 categories: security
-tags: [joomla, jce, cve, rce, exploit]
+tags: [joomla,jce,cve,rce,exploit]
 ---
 
 # Vulnerabilità RCE Unauthenticated nell'estensione Joomla Content Editor (JCE)

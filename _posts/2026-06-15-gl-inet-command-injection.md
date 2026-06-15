@@ -3,7 +3,7 @@ layout: post
 title: "Analisi: GL.iNet GL-MT3000 Command Injection (CVE-2026-12186 e CVE-2026-12187)"
 date: 2026-06-15
 categories: security
-tags: [gl.inet, router, cve, command-injection, rce]
+tags: [router,cve,rce]
 ---
 
 # Analisi dei Proof of Concept Pubblici per Command Injection su Dispositivi GL.iNet GL-MT3000

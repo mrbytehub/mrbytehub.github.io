@@ -3,7 +3,7 @@ layout: post
 title: "Analisi: Vulnerabilità multiple in Squid Proxy (CVE-2026-47729, CVE-2026-50012)"
 date: 2026-06-12
 categories: security
-tags: [linux, cve, squid, proxy, network]
+tags: [linux,cve,squid,proxy,network]
 ---
 
 # Vulnerabilità multiple in Squid Caching Proxy (CVE-2026-47729, CVE-2026-50012)
